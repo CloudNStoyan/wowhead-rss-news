@@ -1,0 +1,10 @@
+{
+    "name": "wowhead-rss-news",
+    "version": "0.1.0",
+    "author": "Stoyan",
+    "description": "Wowhead RSS News",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron ."
+    }
+}
