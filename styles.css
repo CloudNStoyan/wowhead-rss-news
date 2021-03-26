@@ -99,3 +99,13 @@ html, body {
     object-fit: scale-down;
     vertical-align: middle;
 }
+
+.loading-time-wrapper {
+    position: absolute;
+    left: 0;
+    font-size: 12px;
+}
+
+.loading-time-wrapper.hide {
+    display: none;
+}

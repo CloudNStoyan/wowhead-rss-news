@@ -1,94 +1,144 @@
+class Article {
+    constructor(title, description, category, pubDate, timeAgo, link, imageUrl) {
+        this.title = title;
+        this.description = description;
+        this.category = category;
+        this.pubDate = pubDate;
+        this.timeAgo = timeAgo;
+        this.link = link;
+        this.imageUrl = imageUrl;
+    }
+
+    ToNode() {
+        let article = document.createElement('article');
+
+        let information = document.createElement('div');
+        information.className = 'information';
+        article.appendChild(information);
+
+        let thumbnail = document.createElement('div');
+        thumbnail.className = 'thumbnail';
+        article.appendChild(thumbnail);
+
+        let title = document.createElement('h2');
+        title.innerText = this.title;
+        information.appendChild(title);
+
+        let description = document.createElement('p');
+        description.innerHTML = this.description;
+        information.appendChild(description);
+
+        let bottomInfo = document.createElement('div');
+        bottomInfo.className = 'bottom-info';
+        information.appendChild(bottomInfo);
+
+        let category = document.createElement('span');
+        category.innerText = this.category;
+        bottomInfo.appendChild(category);
+
+        let pubDate = document.createElement('span');
+        pubDate.innerText = this.pubDate;
+        bottomInfo.appendChild(pubDate);
+
+        let pubTime = document.createElement('span');
+        pubTime.innerText = this.timeAgo;
+        bottomInfo.appendChild(pubTime);
+
+        let link = document.createElement('a');
+        link.href = 'external:' + this.link;
+        link.innerText = 'Open Article';
+        bottomInfo.appendChild(link);
+
+        let imageLink = document.createElement('a');
+        imageLink.href = 'external:' + this.imageUrl;
+        imageLink.innerText = 'Open Image';
+        bottomInfo.appendChild(imageLink);
+
+        let image = document.createElement('img');
+        image.src = this.imageUrl;
+        thumbnail.appendChild(image);
+
+        let lookUpImageWrapper = document.querySelector('.image-lookup');
+        let lookUpImage = lookUpImageWrapper.querySelector('img');
+
+        image.addEventListener('mouseleave', function() {
+            lookUpImageWrapper.classList.add('hide');
+        });
+
+        image.addEventListener('mouseover', function() {
+            lookUpImageWrapper.classList.remove('hide');
+            lookUpImage.src = this.src;
+        });
+
+        return article;
+    }
+}
+
+let loadingTimeWrapper = document.querySelector('.loading-time-wrapper');
+
+addEventListener('scroll', function() {
+    if (scrollY > 39) {
+        loadingTimeWrapper.classList.add('hide');
+    } else {
+        loadingTimeWrapper.classList.remove('hide');
+    }
+})
+
 const parser = new DOMParser();
 
 let refreshBtn = document.querySelector('.header a');
-refreshBtn.addEventListener('click', function(e) {
+refreshBtn.addEventListener('click', async function(e) {
     e.preventDefault();
     
-    fetchData(true);
+    refreshBtn.innerText = 'Loading...'
+    await fetchData();
+    refreshBtn.innerText = 'Refresh';
+
+    scrollTo({top: 0, left: 0, behavior: 'smooth'});
 });
 
-fetchData(false);
+fetchData();
 
-function fetchData(isRefreshed) {
-    if (isRefreshed) {
-        refreshBtn.innerText = 'Loading...'
-    }
+let loadingTime = document.querySelector('.loading-time');
 
-    fetch('https://www.wowhead.com/news/rss/all')
-    .then(response => response.text())
-    .then(txt => parser.parseFromString(txt, 'text/xml'))
-    .then(parser => {
-        let articles = parser.querySelectorAll('item');
-
-        let wrapper = document.querySelector('.articles');
-        wrapper.innerHTML = "";
-
-        refreshBtn.innerText = 'Refresh';
-
-        let now = Date.now();
-
-        articles.forEach(article => {
-            let articleElement = document.createElement('article');
-            wrapper.appendChild(articleElement);
-
-            let information = document.createElement('div');
-            information.className = 'information';
-            articleElement.appendChild(information);
-
-            let thumbnail = document.createElement('div');
-            thumbnail.className = 'thumbnail';
-            articleElement.appendChild(thumbnail);
-
-            let title = document.createElement('h2');
-            title.innerText = article.querySelector('title').innerHTML;
-            information.appendChild(title);
-
-            let description = document.createElement('p');
-            description.innerHTML = article.querySelector('description').childNodes[0].nodeValue;
-            information.appendChild(description);
-
-            let bottomInfo = document.createElement('div');
-            bottomInfo.className = 'bottom-info';
-            information.appendChild(bottomInfo);
-
-            let category = document.createElement('span');
-            category.innerText = article.querySelector('category').innerHTML
-            bottomInfo.appendChild(category);
-
-            let pubDateHtml = article.querySelector('pubDate').innerHTML;
-
-            let publishDate = new Date(Date.parse(pubDateHtml));
-            let pubDate = document.createElement('span');
-            pubDate.innerText = `${publishDate.getDate().toString().padStart(2,'0')}/${(publishDate.getMonth() + 1).toString().padStart(2,'0')}/${publishDate.getFullYear()}`;
-            bottomInfo.appendChild(pubDate);
-
-            let pubTime = document.createElement('span');
-            pubTime.innerText = timeAgo(now - Date.parse(pubDateHtml));
-            bottomInfo.appendChild(pubTime);
-
-            let link = document.createElement('a');
-            link.href = 'external:' + article.querySelector('link').innerHTML;
-            link.innerText = 'View';
-            bottomInfo.appendChild(link);
+async function fetchData() {
+    let startDate = Date.now();
+    await fetch('https://www.wowhead.com/news/rss/all')
+        .then(response => response.text())
+        .then(txt => parser.parseFromString(txt, 'text/xml'))
+        .then(parser => {
+            loadingTime.innerText = ((Date.now() - startDate) / 1000).toFixed(3) + ' seconds';
             
-            let imageUrl = article.getElementsByTagName('media:content')[0].getAttribute('url');
-            let image = document.createElement('img');
-            image.src = imageUrl;
-            thumbnail.appendChild(image);
-
-            image.addEventListener('mouseleave', function() {
-                let lookUpImageWrapper = document.querySelector('.image-lookup');
-                lookUpImageWrapper.classList.add('hide');
-            });
-
-            image.addEventListener('mouseover', function() {
-                let lookUpImageWrapper = document.querySelector('.image-lookup');
-                lookUpImageWrapper.classList.remove('hide');
-                
-                let lookUpImage = lookUpImageWrapper.querySelector('img');
-                lookUpImage.src = this.src;
-            });
+            let articles = parser.querySelectorAll('item');
+            DisplayArticles(articles);
         });
+}
+
+function DisplayArticles(articles) {
+    let wrapper = document.querySelector('.articles');
+
+    wrapper.innerHTML = "";
+
+    let now = Date.now();
+
+    articles.forEach(article => {
+        let imageNode = article.getElementsByTagName('media:content')[0];
+        let imageUrl = 'https://wow.zamimg.com/images/news/teaser-image.jpg';
+        if (imageNode) {
+            imageUrl = imageNode.getAttribute('url');
+        }
+        let pubDateHtml = article.querySelector('pubDate').innerHTML;
+        let publishDate = new Date(Date.parse(pubDateHtml));
+        let articleObj = new Article(
+            article.querySelector('title').innerHTML,
+            article.querySelector('description').childNodes[0].nodeValue, 
+            article.querySelector('category').innerHTML, 
+            `${publishDate.getDate().toString().padStart(2,'0')}/${(publishDate.getMonth() + 1).toString().padStart(2,'0')}/${publishDate.getFullYear()}`,
+            timeAgo(now - Date.parse(pubDateHtml)),
+            article.querySelector('link').innerHTML,
+            imageUrl
+        );
+        wrapper.appendChild(articleObj.ToNode());
     });
 }
 
