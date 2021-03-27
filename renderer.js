@@ -11,55 +11,27 @@ class Article {
 
     ToNode() {
         let article = document.createElement('article');
-
-        let information = document.createElement('div');
-        information.className = 'information';
-        article.appendChild(information);
-
-        let thumbnail = document.createElement('div');
-        thumbnail.className = 'thumbnail';
-        article.appendChild(thumbnail);
-
-        let title = document.createElement('h2');
-        title.innerText = this.title;
-        information.appendChild(title);
-
-        let description = document.createElement('p');
-        description.innerHTML = this.description;
-        information.appendChild(description);
-
-        let bottomInfo = document.createElement('div');
-        bottomInfo.className = 'bottom-info';
-        information.appendChild(bottomInfo);
-
-        let category = document.createElement('span');
-        category.innerText = this.category;
-        bottomInfo.appendChild(category);
-
-        let pubDate = document.createElement('span');
-        pubDate.innerText = this.pubDate;
-        bottomInfo.appendChild(pubDate);
-
-        let pubTime = document.createElement('span');
-        pubTime.innerText = this.timeAgo;
-        bottomInfo.appendChild(pubTime);
-
-        let link = document.createElement('a');
-        link.href = 'external:' + this.link;
-        link.innerText = 'Open Article';
-        bottomInfo.appendChild(link);
-
-        let imageLink = document.createElement('a');
-        imageLink.href = 'external:' + this.imageUrl;
-        imageLink.innerText = 'Open Image';
-        bottomInfo.appendChild(imageLink);
-
-        let image = document.createElement('img');
-        image.src = this.imageUrl;
-        thumbnail.appendChild(image);
+        
+        article.innerHTML = `
+        <article>
+            <div class="information">
+                <h2>${this.title}</h2>
+                <p>${this.description}</p>
+                <div class="bottom-info">
+                    <span>${this.category}</span>
+                    <span>${this.pubDate}</span>
+                    <span>${this.timeAgo}</span>
+                    <a href="external:${this.link}">Open Article</a>
+                    <a href="external:${this.imageUrl}">Open Image</a>
+                </div>
+            </div>
+            <div class="thumbnail">
+                <img src="${this.imageUrl}"/>
+            </div>
+        </article>`;
 
         let lookUpImageWrapper = document.querySelector('.image-lookup');
-        let lookUpImage = lookUpImageWrapper.querySelector('img');
+        let image = article.querySelector('.thumbnail img');
 
         image.addEventListener('mouseleave', function() {
             lookUpImageWrapper.classList.add('hide');
@@ -67,22 +39,12 @@ class Article {
 
         image.addEventListener('mouseover', function() {
             lookUpImageWrapper.classList.remove('hide');
-            lookUpImage.src = this.src;
+            lookUpImageWrapper.querySelector('img').src = this.src;
         });
 
         return article;
     }
 }
-
-let loadingTimeWrapper = document.querySelector('.loading-time-wrapper');
-
-addEventListener('scroll', function() {
-    if (scrollY > 39) {
-        loadingTimeWrapper.classList.add('hide');
-    } else {
-        loadingTimeWrapper.classList.remove('hide');
-    }
-})
 
 const parser = new DOMParser();
 
@@ -96,6 +58,15 @@ refreshBtn.addEventListener('click', async function(e) {
 
     scrollTo({top: 0, left: 0, behavior: 'smooth'});
 });
+
+let lastRefreshDate;
+let lastRefresh = document.querySelector('.last-refresh');
+
+function UpdateLastRefresh() {
+    lastRefresh.innerText = timeAgo(Date.now() - lastRefreshDate);
+}
+
+setInterval(UpdateLastRefresh, 30 * 1000);
 
 fetchData();
 
@@ -111,12 +82,14 @@ async function fetchData() {
             
             let articles = parser.querySelectorAll('item');
             DisplayArticles(articles);
+
+            lastRefreshDate = Date.now();
+            UpdateLastRefresh();
         });
 }
 
 function DisplayArticles(articles) {
     let wrapper = document.querySelector('.articles');
-
     wrapper.innerHTML = "";
 
     let now = Date.now();
@@ -138,6 +111,7 @@ function DisplayArticles(articles) {
             article.querySelector('link').innerHTML,
             imageUrl
         );
+
         wrapper.appendChild(articleObj.ToNode());
     });
 }

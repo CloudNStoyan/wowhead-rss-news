@@ -100,12 +100,10 @@ html, body {
     vertical-align: middle;
 }
 
-.loading-time-wrapper {
-    position: absolute;
-    left: 0;
+.statistics-wrapper {
     font-size: 12px;
 }
 
-.loading-time-wrapper.hide {
-    display: none;
+.statistics-wrapper > * {
+    display: block;
 }
