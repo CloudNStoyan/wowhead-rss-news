@@ -1,5 +1,5 @@
 class Article {
-    constructor(title, description, category, pubDate, timeAgo, link, imageUrl) {
+    constructor(title, description, category, pubDate, timeAgo, link, imageUrl, date) {
         this.title = title;
         this.description = description;
         this.category = category;
@@ -7,28 +7,27 @@ class Article {
         this.timeAgo = timeAgo;
         this.link = link;
         this.imageUrl = imageUrl;
+        this.date = date;
     }
 
     ToNode() {
         let article = document.createElement('article');
         
         article.innerHTML = `
-        <article>
             <div class="information">
                 <h2>${this.title}</h2>
                 <p>${this.description}</p>
                 <div class="bottom-info">
                     <span>${this.category}</span>
                     <span>${this.pubDate}</span>
-                    <span>${this.timeAgo}</span>
+                    <span data-date="${this.date}">${this.timeAgo}</span>
                     <a href="external:${this.link}">Open Article</a>
                     <a href="external:${this.imageUrl}">Open Image</a>
                 </div>
             </div>
             <div class="thumbnail">
                 <img src="${this.imageUrl}"/>
-            </div>
-        </article>`;
+            </div>`;
 
         let lookUpImageWrapper = document.querySelector('.image-lookup');
         let image = article.querySelector('.thumbnail img');
@@ -62,11 +61,23 @@ refreshBtn.addEventListener('click', async function(e) {
 let lastRefreshDate;
 let lastRefresh = document.querySelector('.last-refresh');
 
-function UpdateLastRefresh() {
-    lastRefresh.innerText = timeAgo(Date.now() - lastRefreshDate);
+function UpdateTimesAgo() {
+    let now = Date.now();
+
+    lastRefresh.innerText = timeAgo(now - lastRefreshDate);
+
+    let articles = document.querySelector('.articles').children;
+
+    for (let i = 0; i < articles.length;i++) {
+        let article = articles[i];
+        let time = article.querySelector('span[data-date]');
+        let date = time.getAttribute('data-date');
+
+        time.innerText = timeAgo(now - date)
+    }
 }
 
-setInterval(UpdateLastRefresh, 30 * 1000);
+setInterval(UpdateTimesAgo, 30000);
 
 fetchData();
 
@@ -84,7 +95,7 @@ async function fetchData() {
             DisplayArticles(articles);
 
             lastRefreshDate = Date.now();
-            UpdateLastRefresh();
+            UpdateTimesAgo();
         });
 }
 
@@ -101,15 +112,17 @@ function DisplayArticles(articles) {
             imageUrl = imageNode.getAttribute('url');
         }
         let pubDateHtml = article.querySelector('pubDate').innerHTML;
-        let publishDate = new Date(Date.parse(pubDateHtml));
+        let pubDate = Date.parse(pubDateHtml);
+        let publishDate = new Date(pubDate);
         let articleObj = new Article(
             article.querySelector('title').innerHTML,
             article.querySelector('description').childNodes[0].nodeValue, 
             article.querySelector('category').innerHTML, 
             `${publishDate.getDate().toString().padStart(2,'0')}/${(publishDate.getMonth() + 1).toString().padStart(2,'0')}/${publishDate.getFullYear()}`,
-            timeAgo(now - Date.parse(pubDateHtml)),
+            timeAgo(now - pubDate),
             article.querySelector('link').innerHTML,
-            imageUrl
+            imageUrl,
+            pubDate
         );
 
         wrapper.appendChild(articleObj.ToNode());
@@ -117,6 +130,7 @@ function DisplayArticles(articles) {
 }
 
 function timeAgo(difference) {
+    console.log(difference);
     var result = '';
 
     if (difference < 5 * 1000) {
